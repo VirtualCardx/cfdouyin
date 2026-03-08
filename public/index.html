@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抖音无水印视频解析</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #fe2c55; /* Douyin red */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #e02448;
+        }
+        #result {
+            margin-top: 2rem;
+            display: none;
+            border-top: 1px solid #eee;
+            padding-top: 1rem;
+        }
+        #video-title {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        #video-author {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+        #video-cover {
+            max-width: 100%;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .download-btn {
+            display: inline-block;
+            background-color: #25c2a0;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .download-btn:hover {
+            background-color: #1ea88a;
+        }
+        .error {
+            color: red;
+            margin-top: 1rem;
+            display: none;
+        }
+        .loading {
+            display: none;
+            margin-top: 1rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>抖音无水印视频解析</h1>
+        <input type="text" id="url-input" placeholder="请粘贴抖音分享链接 (包含v.douyin.com)">
+        <br>
+        <button onclick="parseVideo()">解析视频</button>
+        
+        <div id="loading" class="loading">正在解析中...</div>
+        <div id="error-msg" class="error"></div>
+
+        <div id="result">
+            <h3 id="video-title"></h3>
+            <p id="video-author"></p>
+            <img id="video-cover" src="" alt="Video Cover">
+            <br>
+            <a id="download-link" class="download-btn" href="#" target="_blank">下载无水印视频</a>
+        </div>
+    </div>
+
+    <script>
+        async function parseVideo() {
+            const input = document.getElementById('url-input').value;
+            const resultDiv = document.getElementById('result');
+            const errorDiv = document.getElementById('error-msg');
+            const loadingDiv = document.getElementById('loading');
+            
+            if (!input) {
+                alert('请输入链接');
+                return;
+            }
+
+            // Reset UI
+            resultDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/parse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: input })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '解析失败');
+                }
+
+                // Update UI with result
+                document.getElementById('video-title').textContent = data.title;
+                document.getElementById('video-author').textContent = '作者: ' + data.author;
+                document.getElementById('video-cover').src = data.cover;
+                
+                // Use the proxy download link
+                // Encode the URL to be safe in query param
+                const downloadUrl = `/api/download?url=${encodeURIComponent(data.url)}`;
+                document.getElementById('download-link').href = downloadUrl;
+                
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
